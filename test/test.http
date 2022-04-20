@@ -9,15 +9,8 @@ Content-Type: application/json
   "password": "12345678"
 }
 ###+
-POST http://localhost:9999/api/wallet/token
-Content-Type: application/json
-
-{
-  "login": "6",
-  "password": "12345678"
-}
-###+
 POST http://localhost:9999/api/wallet/transaction
+X-UserID: 2
 Content-Type: application/json
 
 {
@@ -25,11 +18,15 @@ Content-Type: application/json
   "amount": 300
 }
 ###+
-GET http://localhost:9999/api/wallet/transactions/2
+GET http://localhost:9999/api/wallet/transactions
+X-UserID: 2
 ###+
-GET http://localhost:9999/api/wallet/account/2
+GET http://localhost:9999/api/wallet/account
+X-UserID: 2
 ###+
-GET http://localhost:9999/api/wallet/balance/2
+GET http://localhost:9999/api/wallet/balance
+X-UserID: 2
 ###+
-POST http://localhost:9999/api/wallet/identify/2
+POST http://localhost:9999/api/wallet/identify
+X-UserID: 2
 ###+

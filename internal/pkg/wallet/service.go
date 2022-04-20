@@ -2,12 +2,9 @@ package wallet
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"errors"
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/SYSTEMTerror/GoWallet/internal/pkg/types"
 	"github.com/jackc/pgx/v4"
@@ -78,59 +75,6 @@ func (s *Service) Register(ctx context.Context, item *types.RegInfo) (*types.Acc
 	}
 
 	return acc, http.StatusOK, nil
-}
-
-func (s *Service) Token(ctx context.Context, item *types.TokenInfo) (*types.Token, int, error) {
-	var hash string
-	token := &types.Token{}
-	err := s.pool.QueryRow(ctx, `SELECT id, password FROM accounts WHERE phone = $1`, item.Login).Scan(&token.AccID, &hash)
-	if err == pgx.ErrNoRows {
-		log.Println("Token s.pool.QueryRow no rows:", err)
-		return nil, http.StatusNotFound, ErrNotFound
-	}
-	if err != nil {
-		log.Println("Token s.pool.QueryRow error:", err)
-		return nil, http.StatusInternalServerError, ErrInternal
-	}
-
-	err = bcrypt.CompareHashAndPassword([]byte(hash), []byte(item.Password))
-	if err != nil {
-		log.Println("Token bcrypt.CompareHashAndPassword error:", err)
-		return nil, http.StatusUnauthorized, ErrInvalidPassword
-	}
-
-	buffer := make([]byte, 256)
-	n, err := rand.Read(buffer)
-	if n != len(buffer) || err != nil {
-		log.Println("Token rand.Read len : %w (must be 256), error: %w", n, err)
-		return nil, http.StatusInternalServerError, ErrInternal
-	}
-
-	token.Token = hex.EncodeToString(buffer)
-	_, err = s.pool.Exec(ctx, `INSERT INTO tokens (acc_id, token) VALUES ($1, $2)`, token.AccID, token.Token)
-	if err != nil {
-		log.Println("Token s.pool.Exec error:", err)
-		return nil, http.StatusInternalServerError, ErrInternal
-	}
-
-	return token, http.StatusOK, nil
-}
-
-func (s *Service) IDByToken(ctx context.Context, token string) (int64, error) {
-	var id int64
-	var expires time.Time
-
-	err := s.pool.QueryRow(ctx, `SELECT acc_id, expires FROM tokens WHERE token = $1`, token).Scan(&id, &expires)
-	if err == pgx.ErrNoRows {
-		log.Println("IDByToken s.pool.QueryRow No rows:", err)
-		return 0, nil
-	}
-	if err != nil || expires.Before(time.Now()) {
-		log.Println("IDByToken s.pool.QueryRow error:", err)
-		return 0, ErrInternal
-	}
-
-	return id, nil
 }
 
 // Transfer transfers money to/from account depending on sign of amount

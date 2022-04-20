@@ -32,20 +32,6 @@ type Account struct {
 	Created  	time.Time	`json:"created"`
 }
 
-// Type TokenInfo is structure with required fields for getting token (login = phone)
-type TokenInfo struct {
-	Login 		string `json:"login"`
-	Password 	string `json:"password"`
-}
-
-type Token struct {
-	Token		string    `json:"token"`
-	AccID		int64     `json:"acc_id"`
-
-	Expires    	time.Time `json:"expires"`
-	Created    	time.Time `json:"created"`
-}
-
 type Transaction struct {
 	ID			int64		`json:"id"`
 	AccID		int64		`json:"acc_id"`

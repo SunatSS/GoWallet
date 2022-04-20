@@ -10,15 +10,6 @@ CREATE TABLE accounts (
     created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
---table of tokens
-CREATE TABLE tokens
-(
-    token TEXT NOT NULL UNIQUE,
-    acc_id BIGINT NOT NULL REFERENCES accounts,
-    expires TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP + INTERVAL '2 hours',
-    created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
 --table of transactions
 CREATE TABLE transactions
 (

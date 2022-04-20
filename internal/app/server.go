@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"strconv"
 
 	"github.com/SYSTEMTerror/GoWallet/internal/app/middleware"
 	"github.com/SYSTEMTerror/GoWallet/internal/pkg/types"
@@ -29,19 +28,18 @@ func (s *Server) Init() {
 	s.mux.Use(middleware.Logger)
 	s.mux.Use(middleware.LoggersFuncs)
 
-	walletAuthenticateMd := middleware.Authenticate(s.walletSvc.IDByToken)
+	walletUserIDMd := middleware.UserID()
 
 	walletSubrouter := s.mux.PathPrefix("/api/wallet").Subrouter()
-	walletSubrouter.Use(walletAuthenticateMd)
+	walletSubrouter.Use(walletUserIDMd)
 
 	walletSubrouter.HandleFunc("/exist/{phone}", s.handleExist).Methods("GET")
 	walletSubrouter.HandleFunc("/register", s.handleRegister).Methods("POST")
-	walletSubrouter.HandleFunc("/token", s.handleToken).Methods("POST")
 	walletSubrouter.HandleFunc("/transaction", s.handleTransaction).Methods("POST")
-	walletSubrouter.HandleFunc("/transactions/{id}", s.handleGetTransactionsPerMonth).Methods("GET")
-	walletSubrouter.HandleFunc("/account/{id}", s.handleGetAccount).Methods("GET")
-	walletSubrouter.HandleFunc("/balance/{id}", s.handleBalance).Methods("GET")
-	walletSubrouter.HandleFunc("/identify/{id}", s.handleIdentify).Methods("POST")
+	walletSubrouter.HandleFunc("/transactions", s.handleGetTransactionsPerMonth).Methods("GET")
+	walletSubrouter.HandleFunc("/account", s.handleGetAccount).Methods("GET")
+	walletSubrouter.HandleFunc("/balance", s.handleBalance).Methods("GET")
+	walletSubrouter.HandleFunc("/identify", s.handleIdentify).Methods("POST")
 }
 
 func (s *Server) handleExist(w http.ResponseWriter, r *http.Request) {
@@ -106,38 +104,6 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 	loggers.InfoLogger.Println("handleRegisterCustomer finished with any error.")
 }
 
-func (s *Server) handleToken(w http.ResponseWriter, r *http.Request) {
-	loggers, err := middleware.GetLoggers(r.Context())
-	if err != nil {
-		log.Println("LOGGERS DON'T WORK!!!")
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-	loggers.InfoLogger.Println("handleToken started.")
-
-	var item *types.TokenInfo
-	err = json.NewDecoder(r.Body).Decode(&item)
-	if err != nil {
-		loggers.ErrorLogger.Println("handleToken json.NewDecoder error:", err)
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-
-	token, statusCode, err := s.walletSvc.Token(r.Context(), item)
-	if err != nil {
-		loggers.ErrorLogger.Println("handleToken s.walletSvc.Token error:", err)
-		http.Error(w, http.StatusText(statusCode), statusCode)
-		return
-	}
-
-	err = jsoner(w, token, statusCode)
-	if err != nil {
-		loggers.ErrorLogger.Println("handleToken jsoner error:", err)
-		return
-	}
-	loggers.InfoLogger.Println("handleToken finished with any error.")
-}
-
 func (s *Server) handleTransaction(w http.ResponseWriter, r *http.Request) {
 	loggers, err := middleware.GetLoggers(r.Context())
 	if err != nil {
@@ -152,6 +118,19 @@ func (s *Server) handleTransaction(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		loggers.ErrorLogger.Println("handleTransaction json.NewDecoder error:", err)
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	id, err := middleware.GetUserID(r.Context())
+	if err != nil {
+		loggers.ErrorLogger.Println("handleIdentify middleware.Authentication error:", err)
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		return
+	}
+
+	if id != item.AccID {
+		loggers.ErrorLogger.Println("handleTransaction id != item.AccID")
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
 
@@ -179,10 +158,10 @@ func (s *Server) handleGetTransactionsPerMonth(w http.ResponseWriter, r *http.Re
 	}
 	loggers.InfoLogger.Println("handleGetTransactionsPerMonth started.")
 
-	id, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 64)
+	id, err := middleware.GetUserID(r.Context())
 	if err != nil {
-		loggers.ErrorLogger.Println("handleGetTransactionsPerMonth strconv.ParseInt error:", err)
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		loggers.ErrorLogger.Println("handleIdentify middleware.Authentication error:", err)
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
 
@@ -210,10 +189,10 @@ func (s *Server) handleGetAccount(w http.ResponseWriter, r *http.Request) {
 	}
 	loggers.InfoLogger.Println("handleGetAccount started.")
 
-	id, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 64)
+	id, err := middleware.GetUserID(r.Context())
 	if err != nil {
-		loggers.ErrorLogger.Println("handleGetAccount strconv.ParseInt error:", err)
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		loggers.ErrorLogger.Println("handleIdentify middleware.Authentication error:", err)
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
 	
@@ -241,10 +220,10 @@ func (s *Server) handleBalance(w http.ResponseWriter, r *http.Request) {
 	}
 	loggers.InfoLogger.Println("handleBalance started.")
 	
-	id, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 64)
+	id, err := middleware.GetUserID(r.Context())
 	if err != nil {
-		loggers.ErrorLogger.Println("handleBalance strconv.ParseInt error:", err)
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		loggers.ErrorLogger.Println("handleIdentify middleware.Authentication error:", err)
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
 
@@ -272,10 +251,10 @@ func (s *Server) handleIdentify(w http.ResponseWriter, r *http.Request) {
 	}
 	loggers.InfoLogger.Println("handleIdentify started.")
 
-	id, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 64)
+	id, err := middleware.GetUserID(r.Context())
 	if err != nil {
-		loggers.ErrorLogger.Println("handleIdentify strconv.ParseInt error:", err)
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		loggers.ErrorLogger.Println("handleIdentify middleware.Authentication error:", err)
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
 
