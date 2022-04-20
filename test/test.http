@@ -1,0 +1,35 @@
+GET http://localhost:9999/api/wallet/exist/b
+###+
+POST http://localhost:9999/api/wallet/register
+Content-Type: application/json
+
+{
+  "username": "9",
+  "phone": "9",
+  "password": "12345678"
+}
+###+
+POST http://localhost:9999/api/wallet/token
+Content-Type: application/json
+
+{
+  "login": "6",
+  "password": "12345678"
+}
+###+
+POST http://localhost:9999/api/wallet/transaction
+Content-Type: application/json
+
+{
+  "acc_id": 2,
+  "amount": 300
+}
+###+
+GET http://localhost:9999/api/wallet/transactions/2
+###+
+GET http://localhost:9999/api/wallet/account/2
+###+
+GET http://localhost:9999/api/wallet/balance/2
+###+
+POST http://localhost:9999/api/wallet/identify/2
+###+

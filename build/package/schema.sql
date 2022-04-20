@@ -1,0 +1,29 @@
+-- table of accounts
+CREATE TABLE accounts (
+    id BIGSERIAL PRIMARY KEY,
+    balance INTEGER NOT NULL DEFAULT 0,
+    identified BOOLEAN NOT NULL DEFAULT FALSE,
+    name TEXT NOT NULL,
+    phone TEXT NOT NULL UNIQUE,
+    password TEXT NOT NULL,
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+--table of tokens
+CREATE TABLE tokens
+(
+    token TEXT NOT NULL UNIQUE,
+    acc_id BIGINT NOT NULL REFERENCES accounts,
+    expires TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP + INTERVAL '2 hours',
+    created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+--table of transactions
+CREATE TABLE transactions
+(
+    id BIGSERIAL PRIMARY KEY,
+    acc_id BIGINT NOT NULL REFERENCES accounts,
+    amount INTEGER NOT NULL,
+    created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

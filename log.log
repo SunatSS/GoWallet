@@ -1,0 +1,6 @@
+
+INFO	2022/04/20 18:55:34 handleIdentify started.
+ERROR	2022/04/20 18:55:36 server.go:278: handleIdentify json.NewDecoder error: json: cannot unmarshal object into Go value of type int64
+
+INFO	2022/04/20 18:57:47 handleIdentify started.
+INFO	2022/04/20 18:57:52 handleIdentify finished with any error.
