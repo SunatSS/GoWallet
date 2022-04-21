@@ -1,0 +1,9 @@
+server:
+  port: "9999"
+  host: "0.0.0.0"
+
+database:
+  dsn: "postgres://app:pass@192.168.99.100:5432/db"
+
+security:
+  secret_key: "Secret"

@@ -18,10 +18,11 @@ import (
 type Server struct {
 	mux       *mux.Router
 	walletSvc *wallet.Service
+	secretKey string
 }
 
-func NewServer(mux *mux.Router, walletSvc *wallet.Service) *Server {
-	return &Server{mux: mux, walletSvc: walletSvc}
+func NewServer(mux *mux.Router, walletSvc *wallet.Service, secretKey string) *Server {
+	return &Server{mux: mux, walletSvc: walletSvc, secretKey: secretKey}
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -55,7 +56,7 @@ func (s *Server) handleExist(w http.ResponseWriter, r *http.Request) {
 	}
 	loggers.InfoLogger.Println("handleExist started.")
 
-	if !verify(r, "", "Secret") {
+	if !verify(r, "", s.secretKey) {
 		loggers.ErrorLogger.Println("handleExist verify error:", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
@@ -74,7 +75,7 @@ func (s *Server) handleExist(w http.ResponseWriter, r *http.Request) {
 	} else {
 		mes = "Account not exist"
 	}
-	err = jsoner(w, mes, statusCode)
+	err = jsoner(w, mes, statusCode, s.secretKey)
 	if err != nil {
 		loggers.ErrorLogger.Println("handleExist jsoner error:", err)
 		return
@@ -99,7 +100,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !verify(r, fmt.Sprintf("%s", item), "Secret") {
+	if !verify(r, fmt.Sprintf("%s", item), s.secretKey) {
 		loggers.ErrorLogger.Println("handleExist verify error:", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
@@ -112,7 +113,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = jsoner(w, acc, statusCode)
+	err = jsoner(w, acc, statusCode, s.secretKey)
 	if err != nil {
 		loggers.ErrorLogger.Println("handleRegisterCustomer jsoner error:", err)
 		return
@@ -137,7 +138,7 @@ func (s *Server) handleTransaction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !verify(r, fmt.Sprintf("%d", item), "Secret") {
+	if !verify(r, fmt.Sprintf("%d", item), s.secretKey) {
 		loggers.ErrorLogger.Println("handleExist verify error:", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
@@ -163,7 +164,7 @@ func (s *Server) handleTransaction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = jsoner(w, transaction, statusCode)
+	err = jsoner(w, transaction, statusCode, s.secretKey)
 	if err != nil {
 		loggers.ErrorLogger.Println("handleTransaction jsoner error:", err)
 		return
@@ -180,7 +181,7 @@ func (s *Server) handleGetTransactionsPerMonth(w http.ResponseWriter, r *http.Re
 	}
 	loggers.InfoLogger.Println("handleGetTransactionsPerMonth started.")
 
-	if !verify(r, "", "Secret") {
+	if !verify(r, "", s.secretKey) {
 		loggers.ErrorLogger.Println("handleExist verify error:", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
@@ -200,7 +201,7 @@ func (s *Server) handleGetTransactionsPerMonth(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	err = jsoner(w, types.TransactionsPerMonth{Sum: sum, Count: count, Transactions: transactions}, statusCode)
+	err = jsoner(w, types.TransactionsPerMonth{Sum: sum, Count: count, Transactions: transactions}, statusCode, s.secretKey)
 	if err != nil {
 		loggers.ErrorLogger.Println("handleGetTransactionsPerMonth jsoner error:", err)
 		return
@@ -217,7 +218,7 @@ func (s *Server) handleGetAccount(w http.ResponseWriter, r *http.Request) {
 	}
 	loggers.InfoLogger.Println("handleGetAccount started.")
 
-	if !verify(r, "", "Secret") {
+	if !verify(r, "", s.secretKey) {
 		loggers.ErrorLogger.Println("handleExist verify error:", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
@@ -229,7 +230,7 @@ func (s *Server) handleGetAccount(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
-	
+
 	account, statusCode, err := s.walletSvc.GetAccountByID(r.Context(), id)
 	if err != nil {
 		loggers.ErrorLogger.Println("handleGetAccount s.walletSvc.GetAccountByID error:", err)
@@ -237,7 +238,7 @@ func (s *Server) handleGetAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = jsoner(w, account, statusCode)
+	err = jsoner(w, account, statusCode, s.secretKey)
 	if err != nil {
 		loggers.ErrorLogger.Println("handleGetAccount jsoner error:", err)
 		return
@@ -254,12 +255,12 @@ func (s *Server) handleBalance(w http.ResponseWriter, r *http.Request) {
 	}
 	loggers.InfoLogger.Println("handleBalance started.")
 
-	if !verify(r, "", "Secret") {
+	if !verify(r, "", s.secretKey) {
 		loggers.ErrorLogger.Println("handleExist verify error:", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	
+
 	id, err := middleware.GetUserID(r.Context())
 	if err != nil {
 		loggers.ErrorLogger.Println("handleIdentify middleware.Authentication error:", err)
@@ -274,7 +275,7 @@ func (s *Server) handleBalance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = jsoner(w, acc.Balance, statusCode)
+	err = jsoner(w, acc.Balance, statusCode, s.secretKey)
 	if err != nil {
 		loggers.ErrorLogger.Println("handleBalance jsoner error:", err)
 		return
@@ -291,7 +292,7 @@ func (s *Server) handleIdentify(w http.ResponseWriter, r *http.Request) {
 	}
 	loggers.InfoLogger.Println("handleIdentify started.")
 
-	if !verify(r, "", "Secret") {
+	if !verify(r, "", s.secretKey) {
 		loggers.ErrorLogger.Println("handleExist verify error:", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
@@ -311,8 +312,7 @@ func (s *Server) handleIdentify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
-	err = jsoner(w, "Account was identified", statusCode)
+	err = jsoner(w, "Account was identified", statusCode, s.secretKey)
 	if err != nil {
 		loggers.ErrorLogger.Println("handleIdentify jsoner error:", err)
 		return
@@ -321,7 +321,7 @@ func (s *Server) handleIdentify(w http.ResponseWriter, r *http.Request) {
 }
 
 //function jsoner marshal interfaces to json and write to response writer
-func jsoner(w http.ResponseWriter, v interface{}, code int) error {
+func jsoner(w http.ResponseWriter, v interface{}, code int, secretKey string) error {
 	data, err := json.Marshal(v)
 	if err != nil {
 		log.Println("jsoner json.Marshal error:", err)
@@ -329,7 +329,7 @@ func jsoner(w http.ResponseWriter, v interface{}, code int) error {
 		return err
 	}
 
-	w.Header().Set("X-Digest", hasher(string(data), "Secret"))
+	w.Header().Set("X-Digest", hasher(string(data), secretKey))
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	_, err = w.Write(data)
@@ -344,7 +344,7 @@ func jsoner(w http.ResponseWriter, v interface{}, code int) error {
 func hasher(s string, secret string) string {
 	h := hmac.New(sha1.New, []byte(secret))
 	h.Write([]byte(s))
-	return "sha1="+hex.EncodeToString(h.Sum(nil))
+	return "sha1=" + hex.EncodeToString(h.Sum(nil))
 }
 
 //function verify gets hmac-sha1 hash from request header and compare it with request body
