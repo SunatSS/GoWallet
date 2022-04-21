@@ -1,5 +1,5 @@
 ###
-GET http://localhost:9999/api/wallet/exist/b
+GET http://localhost:9999/api/wallet/exist/2
 X-Digest: sha1=0be216f33635f37282bf6ca464a415d6b2d5b806
 
 {}
