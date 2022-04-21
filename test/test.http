@@ -1,16 +1,22 @@
+###
 GET http://localhost:9999/api/wallet/exist/b
+X-Digest: sha1=0be216f33635f37282bf6ca464a415d6b2d5b806
+
+{}
 ###+
 POST http://localhost:9999/api/wallet/register
+X-Digest: sha1=649057494381b5ab6cbb972524b0ac81704366ee
 Content-Type: application/json
 
 {
-  "username": "9",
-  "phone": "9",
+  "username": "test",
+  "phone": "test",
   "password": "12345678"
 }
 ###+
 POST http://localhost:9999/api/wallet/transaction
 X-UserID: 2
+X-Digest: sha1=9c275d03aab8189e60a880839fa92a8e07fb0254
 Content-Type: application/json
 
 {
@@ -20,13 +26,17 @@ Content-Type: application/json
 ###+
 GET http://localhost:9999/api/wallet/transactions
 X-UserID: 2
+X-Digest: sha1=0be216f33635f37282bf6ca464a415d6b2d5b806
 ###+
 GET http://localhost:9999/api/wallet/account
 X-UserID: 2
+X-Digest: sha1=0be216f33635f37282bf6ca464a415d6b2d5b806
 ###+
 GET http://localhost:9999/api/wallet/balance
 X-UserID: 2
+X-Digest: sha1=0be216f33635f37282bf6ca464a415d6b2d5b806
 ###+
 POST http://localhost:9999/api/wallet/identify
 X-UserID: 2
+X-Digest: sha1=0be216f33635f37282bf6ca464a415d6b2d5b806
 ###+

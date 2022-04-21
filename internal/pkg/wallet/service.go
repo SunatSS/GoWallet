@@ -96,7 +96,7 @@ func (s *Service) Transaction(ctx context.Context, item *types.Transaction) (*ty
 		return nil, http.StatusBadRequest, ErrOutOfLimit
 	}
 
-	err = s.pool.QueryRow(ctx, `INSERT INTO transactions (acc_id, amount) VALUES ($1, $2) RETURNING id`, item.AccID, item.Amount).Scan(&item.ID)
+	err = s.pool.QueryRow(ctx, `INSERT INTO transactions (acc_id, amount) VALUES ($1, $2) RETURNING id, created`, item.AccID, item.Amount).Scan(&item.ID, &item.Created)
 	if err != nil {
 		log.Println("Transaction s.pool.QueryRow error:", err)
 		return nil, http.StatusInternalServerError, ErrInternal

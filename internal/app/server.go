@@ -1,7 +1,11 @@
 package app
 
 import (
+	"crypto/hmac"
+	"crypto/sha1"
+	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 
@@ -51,6 +55,12 @@ func (s *Server) handleExist(w http.ResponseWriter, r *http.Request) {
 	}
 	loggers.InfoLogger.Println("handleExist started.")
 
+	if !verify(r, "", "Secret") {
+		loggers.ErrorLogger.Println("handleExist verify error:", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
 	phone := mux.Vars(r)["phone"]
 	exist, acc, statusCode, err := s.walletSvc.Exist(r.Context(), phone)
 	if err != nil {
@@ -89,6 +99,12 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !verify(r, fmt.Sprintf("%s", item), "Secret") {
+		loggers.ErrorLogger.Println("handleExist verify error:", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
 	acc, statusCode, err := s.walletSvc.Register(r.Context(), item)
 	if err != nil {
 		loggers.ErrorLogger.Println("handleRegister s.walletSvc.Register error:", err)
@@ -118,6 +134,12 @@ func (s *Server) handleTransaction(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		loggers.ErrorLogger.Println("handleTransaction json.NewDecoder error:", err)
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	if !verify(r, fmt.Sprintf("%d", item), "Secret") {
+		loggers.ErrorLogger.Println("handleExist verify error:", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
@@ -158,6 +180,12 @@ func (s *Server) handleGetTransactionsPerMonth(w http.ResponseWriter, r *http.Re
 	}
 	loggers.InfoLogger.Println("handleGetTransactionsPerMonth started.")
 
+	if !verify(r, "", "Secret") {
+		loggers.ErrorLogger.Println("handleExist verify error:", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
 	id, err := middleware.GetUserID(r.Context())
 	if err != nil {
 		loggers.ErrorLogger.Println("handleIdentify middleware.Authentication error:", err)
@@ -189,6 +217,12 @@ func (s *Server) handleGetAccount(w http.ResponseWriter, r *http.Request) {
 	}
 	loggers.InfoLogger.Println("handleGetAccount started.")
 
+	if !verify(r, "", "Secret") {
+		loggers.ErrorLogger.Println("handleExist verify error:", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
 	id, err := middleware.GetUserID(r.Context())
 	if err != nil {
 		loggers.ErrorLogger.Println("handleIdentify middleware.Authentication error:", err)
@@ -219,6 +253,12 @@ func (s *Server) handleBalance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	loggers.InfoLogger.Println("handleBalance started.")
+
+	if !verify(r, "", "Secret") {
+		loggers.ErrorLogger.Println("handleExist verify error:", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
 	
 	id, err := middleware.GetUserID(r.Context())
 	if err != nil {
@@ -250,6 +290,12 @@ func (s *Server) handleIdentify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	loggers.InfoLogger.Println("handleIdentify started.")
+
+	if !verify(r, "", "Secret") {
+		loggers.ErrorLogger.Println("handleExist verify error:", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
 
 	id, err := middleware.GetUserID(r.Context())
 	if err != nil {
@@ -283,6 +329,7 @@ func jsoner(w http.ResponseWriter, v interface{}, code int) error {
 		return err
 	}
 
+	w.Header().Set("X-Digest", hasher(string(data), "Secret"))
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	_, err = w.Write(data)
@@ -291,4 +338,20 @@ func jsoner(w http.ResponseWriter, v interface{}, code int) error {
 		return err
 	}
 	return nil
+}
+
+//fuction hasher create hmac-sha1 hash from string and secret key
+func hasher(s string, secret string) string {
+	h := hmac.New(sha1.New, []byte(secret))
+	h.Write([]byte(s))
+	return "sha1="+hex.EncodeToString(h.Sum(nil))
+}
+
+//function verify gets hmac-sha1 hash from request header and compare it with request body
+func verify(r *http.Request, s string, secret string) bool {
+	h := r.Header.Get("X-Digest")
+	if h == "" {
+		return false
+	}
+	return h == hasher(s, secret)
 }
